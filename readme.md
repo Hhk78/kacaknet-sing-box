@@ -1,80 +1,151 @@
-````
+```bash
 ███████ ██ ███    ██  ██████        ██████   ██████  ██   ██     ████████ ███████ ███    ███ ██████  ██       █████  ████████ ███████ ███████ 
 ██      ██ ████   ██ ██             ██   ██ ██    ██  ██ ██         ██    ██      ████  ████ ██   ██ ██      ██   ██    ██    ██      ██      
 ███████ ██ ██ ██  ██ ██   ███ █████ ██████  ██    ██   ███          ██    █████   ██ ████ ██ ██████  ██      ███████    ██    █████   ███████ 
      ██ ██ ██  ██ ██ ██    ██       ██   ██ ██    ██  ██ ██         ██    ██      ██  ██  ██ ██      ██      ██   ██    ██    ██           ██ 
 ███████ ██ ██   ████  ██████        ██████   ██████  ██   ██        ██    ███████ ██      ██ ██      ███████ ██   ██    ██    ███████ ███████
-````
-# Configs
+```
+# Tek server config, 2 senaryo
 
-This repository contains various configuration settings for both Client-side and Server-Side:
-
-- <span style="font-size: larger;"> Inbound-Outbound sample
-- <span style="font-size: larger;"> ShadowTLS-v3
-- <span style="font-size: larger;"> TrojanGFW-tls
-- <span style="font-size: larger;"> TrojanGFW-tls-gRPC
-- <span style="font-size: larger;"> TUIC v5
-- <span style="font-size: larger;"> vless-reality-gRPC
-- <span style="font-size: larger;"> vless-reality-HTTP
-- <span style="font-size: larger;"> vless-reality-TCP
-- <span style="font-size: larger;"> vmess-TCP-tls-HTTP Camouflage 
-- <span style="font-size: larger;"> vmess-tls-gRPC
-- <span style="font-size: larger;"> vmess-tls-WebSocket (ws)
-
-# [Sing-Box Installation](https://sing-box.sagernet.org/installation/package-manager/)
-
-### <img width="20" height="20" src="icons/ubuntu.svg"/> Ubuntu/ <img width="20" height="20" src="icons/debian.svg"/> Debian
-````
-bash <(curl -fsSL https://sing-box.app/deb-install.sh)
-````
-### <img width="20" height="20" src="icons/redhat.svg"/> Redhat/RPM
-````
-bash <(curl -fsSL https://sing-box.app/rpm-install.sh)
-````
-### <img width="20" height="20" src="icons/arch.svg"/> Archlinux/PKG
-````
-bash <(curl -fsSL https://sing-box.app/arch-install.sh)
-````
-
-### Config PATH
-````
-cd /etc/sing-box
-````
-### Edit Config File
-````
-nano /etc/sing-box/config.json
-````
-# Sing-Box Operation
-| Operation   | Command                               |
-|-------------|---------------------------------------|
-| Enable      | `sudo systemctl enable sing-box`      |
-| Disable     | `sudo systemctl disable sing-box`     |
-| Start       | `sudo systemctl start sing-box`       |
-| Stop        | `sudo systemctl stop sing-box`        |
-| Kill        | `sudo systemctl kill sing-box`        |
-| Restart     | `sudo systemctl restart sing-box`     |
-| Logs        | `sudo journalctl -u sing-box --output cat -e` |
-| New Logs    | `sudo journalctl -u sing-box --output cat -f` |
-
-# Sing-Box Commands
-
-To verify whether the configuration file is correctly set up:
-- If you are in the /etc/sing-box folder:
-````
-sing-box check
-````
-- If you are in a different location:
-````
-sing-box check -c <PATH_TO_CONFIG_FILE>
-````
-
-To run Sing-Box:
-
-As a service:
-````
-systemctl start sing-box.service
-````
-Standalone:
-````
-sing-box run -c <PATH_TO_CONFIG_FILE>
-````
+# Server
+```bash
+{
+  "inbounds": [
+    {
+      "type": "vmess",
+      "listen": "0.0.0.0",
+      "listen_port": 1923,
+      "users": [
+        {
+          "uuid": "6be3e1b2-05e1-46a1-ad36-70aaabaa8d12"
+        }
+      ],
+      "transport": {
+        "type": "ws",
+        "path": "/vmess-ws-public"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "ip_cidr": "127.0.0.53/32",
+        "port": 53,
+        "action": "route",
+        "outbound": "direct"
+      },
+      {
+        "ip_is_private": true,
+        "action": "reject",
+        "method": "drop"
+      }
+    ]
+  }
+}
+```
+# Senaryo 1: VMess over WebSocket
+```bash
+{
+  "dns": {
+    "servers": [
+      {
+        "address": "tcp://127.0.0.53",
+        "detour": "vmess"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "type": "tun",
+      "address": "172.18.0.1/30",
+      "auto_route": true
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "vmess",
+      "tag": "vmess",
+      "server": "SERVERIP",
+      "server_port": 80,
+      "uuid": "6be3e1b2-05e1-46a1-ad36-70aaabaa8d12",
+      "security": "auto",
+      "transport": {
+        "type": "ws",
+        "path": "/vmess-ws-public",
+        "headers": {
+          "Host": "SNI SPPOFING BURDA"
+        }
+      }
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "action": "sniff"
+      },
+      {
+        "protocol": "dns",
+        "action": "hijack-dns"
+      }
+    ],
+    "auto_detect_interface": true
+  }
+}
+```
+# SENARYO 2: VMess over WebSocket over TLS
+```bash
+{
+  "dns": {
+    "servers": [
+      {
+        "address": "tcp://127.0.0.53",
+        "detour": "vmess"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "type": "tun",
+      "address": "172.18.0.1/30",
+      "auto_route": true
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "vmess",
+      "tag": "vmess",
+      "server": "SERVER IP",
+      "server_port": 443,
+      "uuid": "6be3e1b2-05e1-46a1-ad36-70aaabaa8d12",
+      "security": "zero",
+      "tls": {
+        "enabled": true,
+        "server_name": "SNI SPOOFING BURDA",
+        "insecure": true
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/vmess-ws-public"
+      }
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "action": "sniff"
+      },
+      {
+        "protocol": "dns",
+        "action": "hijack-dns"
+      }
+    ],
+    "auto_detect_interface": true
+  }
+}
+```
